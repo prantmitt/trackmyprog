@@ -1,0 +1,1054 @@
+<!doctype html>
+<html lang="en" class="h-full">
+ <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Study Planner</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="/_sdk/element_sdk.js"></script>
+  <script src="/_sdk/data_sdk.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet">
+  <style>
+    * { font-family: 'Outfit', sans-serif; }
+    .gradient-bg {
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+    }
+    .glass-card {
+      background: rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .glow-btn {
+      box-shadow: 0 0 20px rgba(233, 69, 96, 0.3);
+    }
+    .glow-btn:hover {
+      box-shadow: 0 0 30px rgba(233, 69, 96, 0.5);
+    }
+    .timer-display {
+      font-variant-numeric: tabular-nums;
+    }
+    .task-item {
+      transition: all 0.3s ease;
+    }
+    .task-item:hover {
+      transform: translateX(5px);
+    }
+    .calendar-day {
+      transition: all 0.2s ease;
+    }
+    .calendar-day:hover {
+      transform: scale(1.1);
+    }
+    .fade-in {
+      animation: fadeIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(15px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.6; }
+    }
+    .pulse-animation {
+      animation: pulse 1.5s ease-in-out infinite;
+    }
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateX(-10px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+    .slide-in {
+      animation: slideIn 0.3s ease-out;
+    }
+    * {
+      transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+    }
+    button, input, select {
+      transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .scrollbar-thin::-webkit-scrollbar {
+      width: 6px;
+    }
+    .scrollbar-thin::-webkit-scrollbar-track {
+      background: rgba(255,255,255,0.05);
+      border-radius: 3px;
+    }
+    .scrollbar-thin::-webkit-scrollbar-thumb {
+      background: rgba(233, 69, 96, 0.5);
+      border-radius: 3px;
+    }
+  </style>
+  <style>body { box-sizing: border-box; }</style>
+ </head>
+ <body class="h-full gradient-bg text-white overflow-auto">
+  <div class="min-h-full w-full p-4 md:p-6 lg:p-8"><!-- Header -->
+   <header class="text-center mb-8">
+    <h1 id="app-title" class="text-4xl md:text-5xl font-bold bg-gradient-to-r from-pink-500 via-rose-400 to-orange-400 bg-clip-text text-transparent">My Study Planner</h1>
+    <p class="text-gray-400 mt-2" id="current-date"></p>
+   </header><!-- Main Grid -->
+   <div class="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-6"><!-- Left Column: Tasks -->
+    <div class="lg:col-span-1 space-y-6"><!-- Daily Tasks -->
+     <section class="glass-card rounded-2xl p-6">
+      <div class="flex items-center justify-between mb-4">
+       <h2 id="task-section-title" class="text-xl font-semibold text-rose-400">Today's Tasks</h2><span id="task-count" class="text-sm text-gray-400">0 tasks</span>
+      </div><!-- Add Task Form -->
+      <form id="task-form" class="mb-4">
+       <div class="flex gap-2"><input type="text" id="task-input" placeholder="Add a new task..." class="flex-1 bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:border-rose-400 transition-colors"> <button type="submit" class="bg-rose-500 hover:bg-rose-600 px-4 py-3 rounded-xl transition-colors glow-btn">
+         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+         </svg></button>
+       </div>
+      </form><!-- Task List -->
+      <div id="task-list" class="space-y-2 max-h-64 overflow-y-auto scrollbar-thin">
+       <p class="text-gray-500 text-center py-4">No tasks yet. Add one above!</p>
+      </div>
+     </section>
+    </div><!-- Middle Column: Time Tracker -->
+    <div class="lg:col-span-1 space-y-6"><!-- Time Tracker -->
+     <section class="glass-card rounded-2xl p-6">
+      <h2 id="tracker-section-title" class="text-xl font-semibold text-rose-400 mb-4">Time Tracker</h2><!-- Category Selection -->
+      <div class="flex gap-2 mb-6"><button data-category="study" class="category-btn flex-1 py-2 px-4 rounded-xl bg-emerald-500/20 border border-emerald-500/50 text-emerald-400 font-medium transition-all hover:bg-emerald-500/30"> 📚 Study </button> <button data-category="class" class="category-btn flex-1 py-2 px-4 rounded-xl bg-white/10 border border-white/20 text-gray-400 font-medium transition-all hover:bg-white/20"> 🎓 Class </button>
+      </div><!-- Timer Display -->
+      <div class="text-center mb-6">
+       <div id="timer-display" class="text-6xl font-bold timer-display text-white mb-2">
+        00:00:00
+       </div>
+       <p id="timer-status" class="text-gray-400">Ready to start</p>
+      </div><!-- Timer Controls -->
+      <div class="flex gap-3 justify-center"><button id="start-btn" class="bg-emerald-500 hover:bg-emerald-600 px-8 py-3 rounded-xl font-semibold transition-all transform hover:scale-105"> ▶ Start </button> <button id="pause-btn" class="bg-amber-500 hover:bg-amber-600 px-8 py-3 rounded-xl font-semibold transition-all transform hover:scale-105 hidden"> ⏸ Pause </button> <button id="save-btn" class="bg-blue-500 hover:bg-blue-600 px-8 py-3 rounded-xl font-semibold transition-all transform hover:scale-105 hidden"> 💾 Save </button> <button id="reset-btn" class="bg-white/10 hover:bg-white/20 px-6 py-3 rounded-xl font-semibold transition-all"> ↺ Reset </button>
+      </div>
+     </section><!-- Today's Stats -->
+     <section class="glass-card rounded-2xl p-6">
+      <h3 class="text-lg font-semibold text-gray-300 mb-4">Today's Progress</h3>
+      <div class="grid grid-cols-2 gap-4">
+       <div class="bg-emerald-500/10 border border-emerald-500/30 rounded-xl p-4 text-center">
+        <p class="text-3xl font-bold text-emerald-400" id="study-time">0h 0m</p>
+        <p class="text-sm text-gray-400">Study Time</p>
+       </div>
+       <div class="bg-blue-500/10 border border-blue-500/30 rounded-xl p-4 text-center">
+        <p class="text-3xl font-bold text-blue-400" id="class-time">0h 0m</p>
+        <p class="text-sm text-gray-400">Class Time</p>
+       </div>
+      </div>
+     </section>
+    </div><!-- Right Column: Monthly Planner -->
+    <div class="lg:col-span-1">
+     <section class="glass-card rounded-2xl p-6">
+      <div class="flex items-center justify-between mb-4">
+       <h2 class="text-xl font-semibold text-rose-400">Monthly Planner</h2>
+       <div class="flex gap-2"><button id="prev-month" class="p-2 hover:bg-white/10 rounded-lg transition-colors">
+         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+         </svg></button> <button id="next-month" class="p-2 hover:bg-white/10 rounded-lg transition-colors">
+         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+         </svg></button>
+       </div>
+      </div>
+      <p id="calendar-month" class="text-center text-lg font-medium mb-4"></p><!-- Calendar Header -->
+      <div class="grid grid-cols-7 gap-1 mb-2">
+       <div class="text-center text-xs text-gray-500 font-medium">
+        Sun
+       </div>
+       <div class="text-center text-xs text-gray-500 font-medium">
+        Mon
+       </div>
+       <div class="text-center text-xs text-gray-500 font-medium">
+        Tue
+       </div>
+       <div class="text-center text-xs text-gray-500 font-medium">
+        Wed
+       </div>
+       <div class="text-center text-xs text-gray-500 font-medium">
+        Thu
+       </div>
+       <div class="text-center text-xs text-gray-500 font-medium">
+        Fri
+       </div>
+       <div class="text-center text-xs text-gray-500 font-medium">
+        Sat
+       </div>
+      </div><!-- Calendar Grid -->
+      <div id="calendar-grid" class="grid grid-cols-7 gap-1 mb-4">
+      </div><!-- Selected Day Events -->
+      <div id="day-events" class="border-t border-white/10 pt-4 mt-4">
+       <div class="flex items-center justify-between mb-3">
+        <h3 id="selected-day-title" class="font-medium text-gray-300">Select a day</h3>
+       </div><!-- Add Event Form -->
+       <form id="event-form" class="mb-3 hidden">
+        <div class="flex gap-2"><input type="text" id="event-input" placeholder="Add study plan..." class="flex-1 bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-400 focus:outline-none focus:border-rose-400"> <button type="submit" class="bg-rose-500 hover:bg-rose-600 px-3 py-2 rounded-lg text-sm transition-colors"> Add </button>
+        </div>
+       </form>
+       <div id="event-list" class="space-y-2 max-h-32 overflow-y-auto scrollbar-thin">
+        <p class="text-gray-500 text-sm text-center">Click a day to view/add plans</p>
+       </div>
+      </div>
+     </section>
+    </div>
+   </div><!-- Navigation to Syllabus & History -->
+   <div class="max-w-7xl mx-auto mt-8 mb-8">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+     <button onclick="navigateTo('syllabus')" class="glass-card rounded-2xl p-8 hover:bg-white/10 transition-all transform hover:scale-105 text-left">
+      <div class="flex items-center justify-between">
+       <div>
+        <h3 class="text-2xl font-bold text-rose-400 mb-2">📚 Syllabus Tracker</h3>
+        <p class="text-gray-400">Track your progress across all 11 subjects</p>
+       </div>
+       <svg class="w-8 h-8 text-rose-400" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+       </svg>
+      </div></button> <button onclick="navigateTo('history')" class="glass-card rounded-2xl p-8 hover:bg-white/10 transition-all transform hover:scale-105 text-left">
+      <div class="flex items-center justify-between">
+       <div>
+        <h3 class="text-2xl font-bold text-blue-400 mb-2">📊 Study History</h3>
+        <p class="text-gray-400">View all your study and class sessions</p>
+       </div>
+       <svg class="w-8 h-8 text-blue-400" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+       </svg>
+      </div></button>
+    </div>
+   </div><!-- Data Limit Warning -->
+   <div id="limit-warning" class="hidden fixed bottom-4 left-1/2 transform -translate-x-1/2 bg-amber-500/90 text-white px-6 py-3 rounded-xl shadow-lg">
+    ⚠️ You've reached the maximum storage limit (999 items). Please delete some items to continue.
+   </div><!-- SYLLABUS PAGE (hidden by default) -->
+   <div id="syllabus-page" class="hidden min-h-full w-full p-4 md:p-6 lg:p-8">
+    <div class="max-w-7xl mx-auto">
+     <!-- Header -->
+     <div class="flex items-center justify-between mb-8">
+      <div>
+       <h1 class="text-4xl md:text-5xl font-bold bg-gradient-to-r from-pink-500 via-rose-400 to-orange-400 bg-clip-text text-transparent">Syllabus Tracker</h1>
+       <p class="text-gray-400 mt-2">Track your progress across all subjects</p>
+      </div><button onclick="navigateTo('home')" class="bg-white/10 hover:bg-white/20 px-6 py-3 rounded-xl font-semibold transition-all"> ← Back </button>
+     </div><!-- Add Subject Form -->
+     <section class="glass-card rounded-2xl p-6 mb-8">
+      <h3 class="text-lg font-semibold text-rose-400 mb-4">Add New Subject</h3>
+      <form id="subject-form" class="flex gap-3 flex-col sm:flex-row"><input type="text" id="subject-input" placeholder="Subject name..." class="flex-1 bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:border-rose-400 transition-colors"> <input type="number" id="chapters-input" placeholder="Chapters" min="1" max="100" class="w-24 sm:w-32 bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:border-rose-400 transition-colors"> <button type="submit" class="bg-rose-500 hover:bg-rose-600 px-6 py-3 rounded-xl transition-colors glow-btn font-semibold flex items-center justify-center gap-2">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+        </svg> Add </button>
+      </form>
+     </section><!-- Syllabus Grid -->
+     <section class="glass-card rounded-2xl p-6">
+      <div id="syllabus-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      </div>
+     </section>
+    </div>
+   </div><!-- HISTORY PAGE (hidden by default) -->
+   <div id="history-page" class="hidden min-h-full w-full p-4 md:p-6 lg:p-8">
+    <div class="max-w-7xl mx-auto">
+     <!-- Header -->
+     <div class="flex items-center justify-between mb-8">
+      <div>
+       <h1 class="text-4xl md:text-5xl font-bold bg-gradient-to-r from-pink-500 via-rose-400 to-orange-400 bg-clip-text text-transparent">Study History</h1>
+       <p class="text-gray-400 mt-2">All your study and class sessions</p>
+      </div><button onclick="navigateTo('home')" class="bg-white/10 hover:bg-white/20 px-6 py-3 rounded-xl font-semibold transition-all"> ← Back </button>
+     </div><!-- History Grid -->
+     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <!-- Study Sessions -->
+      <section class="glass-card rounded-2xl p-6">
+       <div class="flex items-center gap-3 mb-6">
+        <span class="text-3xl">📚</span>
+        <div>
+         <h2 class="text-2xl font-semibold text-emerald-400">Study Sessions</h2>
+         <p class="text-sm text-gray-400">All your study time</p>
+        </div>
+       </div>
+       <div id="study-history" class="space-y-3 max-h-[600px] overflow-y-auto scrollbar-thin">
+        <p class="text-gray-500 text-center py-8">No study sessions yet</p>
+       </div>
+      </section><!-- Class Sessions -->
+      <section class="glass-card rounded-2xl p-6">
+       <div class="flex items-center gap-3 mb-6">
+        <span class="text-3xl">🎓</span>
+        <div>
+         <h2 class="text-2xl font-semibold text-blue-400">Class Sessions</h2>
+         <p class="text-sm text-gray-400">All your class time</p>
+        </div>
+       </div>
+       <div id="class-history" class="space-y-3 max-h-[600px] overflow-y-auto scrollbar-thin">
+        <p class="text-gray-500 text-center py-8">No class sessions yet</p>
+       </div>
+      </section>
+     </div>
+    </div>
+   </div>
+  </div>
+  <script>
+    // App State
+    let allData = [];
+    let timerInterval = null;
+    let timerSeconds = 0;
+    let isTimerRunning = false;
+    let currentCategory = 'study';
+    let currentMonth = new Date();
+    let selectedDate = null;
+    let recordCount = 0;
+
+    // Subjects data
+    const SUBJECTS = [
+      { id: 'physics-1', name: 'Physics 1st', chapters: 15 },
+      { id: 'chemistry-1', name: 'Chemistry 1st', chapters: 15 },
+      { id: 'math-1', name: 'Math 1st', chapters: 20 },
+      { id: 'biology-1', name: 'Biology 1st', chapters: 15 },
+      { id: 'bangla', name: 'Bangla', chapters: 12 },
+      { id: 'english', name: 'English', chapters: 12 },
+      { id: 'ict', name: 'ICT', chapters: 8 },
+      { id: 'physics-2', name: 'Physics 2nd', chapters: 15 },
+      { id: 'chemistry-2', name: 'Chemistry 2nd', chapters: 15 },
+      { id: 'math-2', name: 'Math 2nd', chapters: 20 },
+      { id: 'biology-2', name: 'Biology 2nd', chapters: 15 }
+    ];
+
+    // Default Config
+    const defaultConfig = {
+      app_title: 'My Study Planner',
+      task_section_title: "Today's Tasks",
+      tracker_section_title: 'Time Tracker',
+      syllabus_section_title: 'Syllabus Tracker',
+      background_color: '#1a1a2e',
+      accent_color: '#e94560',
+      text_color: '#ffffff',
+      card_color: 'rgba(255, 255, 255, 0.05)',
+      secondary_color: '#10b981',
+      font_family: 'Outfit',
+      font_size: 16
+    };
+
+    // Element SDK Integration
+    if (window.elementSdk) {
+      window.elementSdk.init({
+        defaultConfig,
+        onConfigChange: async (config) => {
+          const title = config.app_title || defaultConfig.app_title;
+          const taskTitle = config.task_section_title || defaultConfig.task_section_title;
+          const trackerTitle = config.tracker_section_title || defaultConfig.tracker_section_title;
+          const syllabusTitle = config.syllabus_section_title || defaultConfig.syllabus_section_title;
+          const accentColor = config.accent_color || defaultConfig.accent_color;
+          const bgColor = config.background_color || defaultConfig.background_color;
+          const textColor = config.text_color || defaultConfig.text_color;
+          const secondaryColor = config.secondary_color || defaultConfig.secondary_color;
+          const cardColor = config.card_color || defaultConfig.card_color;
+          const fontFamily = config.font_family || defaultConfig.font_family;
+          const fontSize = config.font_size || defaultConfig.font_size;
+
+          document.getElementById('app-title').textContent = title;
+          document.getElementById('task-section-title').textContent = taskTitle;
+          document.getElementById('tracker-section-title').textContent = trackerTitle;
+          document.getElementById('syllabus-section-title').textContent = syllabusTitle;
+
+          document.getElementById('app-title').style.background = `linear-gradient(to right, ${accentColor}, #fb923c)`;
+          document.getElementById('app-title').style.webkitBackgroundClip = 'text';
+          document.getElementById('app-title').style.backgroundClip = 'text';
+
+          document.body.style.fontFamily = `${fontFamily}, sans-serif`;
+          document.body.style.fontSize = `${fontSize}px`;
+
+          document.querySelectorAll('.glass-card').forEach(card => {
+            card.style.background = cardColor;
+          });
+        },
+        mapToCapabilities: (config) => ({
+          recolorables: [
+            {
+              get: () => config.background_color || defaultConfig.background_color,
+              set: (v) => window.elementSdk.setConfig({ background_color: v })
+            },
+            {
+              get: () => config.card_color || defaultConfig.card_color,
+              set: (v) => window.elementSdk.setConfig({ card_color: v })
+            },
+            {
+              get: () => config.text_color || defaultConfig.text_color,
+              set: (v) => window.elementSdk.setConfig({ text_color: v })
+            },
+            {
+              get: () => config.accent_color || defaultConfig.accent_color,
+              set: (v) => window.elementSdk.setConfig({ accent_color: v })
+            },
+            {
+              get: () => config.secondary_color || defaultConfig.secondary_color,
+              set: (v) => window.elementSdk.setConfig({ secondary_color: v })
+            }
+          ],
+          borderables: [],
+          fontEditable: {
+            get: () => config.font_family || defaultConfig.font_family,
+            set: (v) => window.elementSdk.setConfig({ font_family: v })
+          },
+          fontSizeable: {
+            get: () => config.font_size || defaultConfig.font_size,
+            set: (v) => window.elementSdk.setConfig({ font_size: v })
+          }
+        }),
+        mapToEditPanelValues: (config) => new Map([
+          ['app_title', config.app_title || defaultConfig.app_title],
+          ['task_section_title', config.task_section_title || defaultConfig.task_section_title],
+          ['tracker_section_title', config.tracker_section_title || defaultConfig.tracker_section_title],
+          ['syllabus_section_title', config.syllabus_section_title || defaultConfig.syllabus_section_title]
+        ])
+      });
+    }
+
+    // Data SDK Handler
+    const dataHandler = {
+      onDataChanged(data) {
+        allData = data;
+        recordCount = data.length;
+        renderTasks();
+        renderTodayStats();
+        renderCalendar();
+        renderDayEvents();
+        renderSyllabus();
+        renderHistory();
+      }
+    };
+
+    // Initialize Data SDK
+    async function initApp() {
+      if (window.dataSdk) {
+        const result = await window.dataSdk.init(dataHandler);
+        if (!result.isOk) {
+          console.error('Failed to initialize Data SDK');
+        }
+      }
+      updateCurrentDate();
+      renderCalendar();
+    }
+
+    // Update current date display
+    function updateCurrentDate() {
+      const now = new Date();
+      const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+      document.getElementById('current-date').textContent = now.toLocaleDateString('en-US', options);
+    }
+
+    // Get today's date string
+    function getTodayString() {
+      return new Date().toISOString().split('T')[0];
+    }
+
+    // Check data limit
+    function checkLimit() {
+      if (recordCount >= 999) {
+        document.getElementById('limit-warning').classList.remove('hidden');
+        return false;
+      }
+      return true;
+    }
+
+    // TASKS
+    function renderTasks() {
+      const taskList = document.getElementById('task-list');
+      const today = getTodayString();
+      const todayTasks = allData.filter(item => item.type === 'task' && item.date === today);
+      
+      document.getElementById('task-count').textContent = `${todayTasks.length} task${todayTasks.length !== 1 ? 's' : ''}`;
+
+      if (todayTasks.length === 0) {
+        taskList.innerHTML = '<p class="text-gray-500 text-center py-4">No tasks yet. Add one above!</p>';
+        return;
+      }
+
+      const existingItems = new Map([...taskList.querySelectorAll('.task-item')].map(el => [el.dataset.id, el]));
+
+      todayTasks.forEach((task, index) => {
+        if (existingItems.has(task.__backendId)) {
+          const el = existingItems.get(task.__backendId);
+          updateTaskElement(el, task);
+          existingItems.delete(task.__backendId);
+        } else {
+          const el = createTaskElement(task);
+          el.style.animationDelay = `${index * 0.05}s`;
+          taskList.appendChild(el);
+        }
+      });
+
+      existingItems.forEach(el => el.remove());
+      
+      if (taskList.querySelector('p')) {
+        taskList.querySelector('p').remove();
+      }
+    }
+
+    function createTaskElement(task) {
+      const div = document.createElement('div');
+      div.className = 'task-item fade-in';
+      div.dataset.id = task.__backendId;
+      updateTaskElement(div, task);
+      return div;
+    }
+
+    function updateTaskElement(el, task) {
+      el.innerHTML = `
+        <div class="flex items-center gap-3 bg-white/5 hover:bg-white/10 p-3 rounded-xl group">
+          <div 
+            onclick="event.stopPropagation(); toggleTask('${task.__backendId}')"
+            class="w-6 h-6 rounded-full border-2 ${task.completed ? 'bg-emerald-500 border-emerald-500' : 'border-gray-500'} flex items-center justify-center transition-colors cursor-pointer flex-shrink-0"
+          >
+            ${task.completed ? '<svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>' : ''}
+          </div>
+          <span class="${task.completed ? 'line-through text-gray-500' : 'text-white'} flex-1 cursor-pointer" onclick="toggleTask('${task.__backendId}')">${escapeHtml(task.text)}</span>
+          <button 
+            onclick="event.stopPropagation(); deleteTask('${task.__backendId}')"
+            class="opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-300 transition-opacity p-1 flex-shrink-0"
+          >
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+            </svg>
+          </button>
+        </div>
+      `;
+    }
+
+    async function addTask(text) {
+      if (!checkLimit()) return;
+      
+      const result = await window.dataSdk.create({
+        type: 'task',
+        text: text,
+        completed: false,
+        date: getTodayString(),
+        duration: 0,
+        category: '',
+        createdAt: new Date().toISOString()
+      });
+
+      if (!result.isOk) {
+        console.error('Failed to add task');
+      }
+    }
+
+    async function toggleTask(id) {
+      const task = allData.find(t => t.__backendId === id);
+      if (task) {
+        task.completed = !task.completed;
+        await window.dataSdk.update(task);
+      }
+    }
+
+    async function deleteTask(id) {
+      const task = allData.find(t => t.__backendId === id);
+      if (task) {
+        await window.dataSdk.delete(task);
+      }
+    }
+
+    // TIMER
+    function formatTime(seconds) {
+      const hrs = Math.floor(seconds / 3600);
+      const mins = Math.floor((seconds % 3600) / 60);
+      const secs = seconds % 60;
+      return `${hrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    }
+
+    function formatDuration(seconds) {
+      const hrs = Math.floor(seconds / 3600);
+      const mins = Math.floor((seconds % 3600) / 60);
+      return `${hrs}h ${mins}m`;
+    }
+
+    function startTimer() {
+      if (isTimerRunning) return;
+      isTimerRunning = true;
+      document.getElementById('start-btn').classList.add('hidden');
+      document.getElementById('pause-btn').classList.remove('hidden');
+      document.getElementById('timer-status').textContent = `Tracking ${currentCategory} time...`;
+      document.getElementById('timer-status').classList.add('pulse-animation');
+      
+      timerInterval = setInterval(() => {
+        timerSeconds++;
+        document.getElementById('timer-display').textContent = formatTime(timerSeconds);
+      }, 1000);
+    }
+
+    function pauseTimer() {
+      if (!isTimerRunning) return;
+      isTimerRunning = false;
+      clearInterval(timerInterval);
+      document.getElementById('start-btn').classList.remove('hidden');
+      document.getElementById('pause-btn').classList.add('hidden');
+      document.getElementById('save-btn').classList.remove('hidden');
+      document.getElementById('timer-status').textContent = 'Paused - Ready to save';
+      document.getElementById('timer-status').classList.remove('pulse-animation');
+    }
+
+    async function saveTimer() {
+      if (timerSeconds > 0) {
+        if (!checkLimit()) return;
+        
+        const saveBtn = document.getElementById('save-btn');
+        saveBtn.disabled = true;
+        saveBtn.textContent = 'Saving...';
+        
+        // Save the tracked time
+        const result = await window.dataSdk.create({
+          type: 'time',
+          text: `${currentCategory} session`,
+          completed: false,
+          date: getTodayString(),
+          duration: timerSeconds,
+          category: currentCategory,
+          createdAt: new Date().toISOString()
+        });
+        
+        if (result.isOk) {
+          document.getElementById('timer-status').textContent = '✓ Saved successfully!';
+          setTimeout(() => {
+            resetTimer();
+          }, 1500);
+        } else {
+          document.getElementById('timer-status').textContent = 'Failed to save. Try again.';
+        }
+        
+        saveBtn.disabled = false;
+        saveBtn.textContent = '💾 Save';
+      }
+    }
+
+    async function resetTimer() {
+      pauseTimer();
+      timerSeconds = 0;
+      document.getElementById('timer-display').textContent = '00:00:00';
+      document.getElementById('timer-status').textContent = 'Ready to start';
+      document.getElementById('save-btn').classList.add('hidden');
+    }
+
+    function setCategory(category) {
+      currentCategory = category;
+      document.querySelectorAll('.category-btn').forEach(btn => {
+        if (btn.dataset.category === category) {
+          btn.className = 'category-btn flex-1 py-2 px-4 rounded-xl font-medium transition-all ' + 
+            (category === 'study' ? 'bg-emerald-500/20 border border-emerald-500/50 text-emerald-400' : 'bg-blue-500/20 border border-blue-500/50 text-blue-400');
+        } else {
+          btn.className = 'category-btn flex-1 py-2 px-4 rounded-xl bg-white/10 border border-white/20 text-gray-400 font-medium transition-all hover:bg-white/20';
+        }
+      });
+    }
+
+    function renderTodayStats() {
+      const today = getTodayString();
+      const todayTimes = allData.filter(item => item.type === 'time' && item.date === today);
+      
+      const studyTotal = todayTimes.filter(t => t.category === 'study').reduce((sum, t) => sum + (t.duration || 0), 0);
+      const classTotal = todayTimes.filter(t => t.category === 'class').reduce((sum, t) => sum + (t.duration || 0), 0);
+      
+      document.getElementById('study-time').textContent = formatDuration(studyTotal);
+      document.getElementById('class-time').textContent = formatDuration(classTotal);
+    }
+
+    // CALENDAR
+    function renderCalendar() {
+      const year = currentMonth.getFullYear();
+      const month = currentMonth.getMonth();
+      
+      document.getElementById('calendar-month').textContent = new Date(year, month).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+      
+      const firstDay = new Date(year, month, 1).getDay();
+      const daysInMonth = new Date(year, month + 1, 0).getDate();
+      const today = new Date();
+      const todayStr = getTodayString();
+      
+      const grid = document.getElementById('calendar-grid');
+      grid.innerHTML = '';
+      
+      // Get events for this month
+      const monthEvents = allData.filter(item => {
+        if (!item.date) return false;
+        const itemDate = item.date.split('T')[0]; // Ensure we're comparing date strings correctly
+        const itemYear = parseInt(itemDate.split('-')[0]);
+        const itemMonth = parseInt(itemDate.split('-')[1]) - 1;
+        return itemMonth === month && itemYear === year;
+      });
+      
+      // Empty days
+      for (let i = 0; i < firstDay; i++) {
+        const empty = document.createElement('div');
+        empty.className = 'h-10';
+        grid.appendChild(empty);
+      }
+      
+      // Days
+      for (let day = 1; day <= daysInMonth; day++) {
+        const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+        const hasEvents = monthEvents.some(e => e.date.split('T')[0] === dateStr);
+        const isToday = dateStr === todayStr;
+        const isSelected = selectedDate === dateStr;
+        
+        const dayEl = document.createElement('button');
+        dayEl.className = `calendar-day h-10 rounded-lg flex flex-col items-center justify-center text-sm font-medium relative
+          ${isToday ? 'bg-rose-500 text-white shadow-lg shadow-rose-500/50' : isSelected ? 'bg-white/20 text-white' : 'hover:bg-white/10 text-gray-300'}`;
+        dayEl.innerHTML = `
+          ${day}
+          ${hasEvents ? '<span class="absolute bottom-1 w-1 h-1 bg-emerald-400 rounded-full"></span>' : ''}
+        `;
+        dayEl.onclick = () => selectDate(dateStr);
+        grid.appendChild(dayEl);
+      }
+    }
+
+    function selectDate(dateStr) {
+      selectedDate = dateStr;
+      const date = new Date(dateStr + 'T00:00:00');
+      document.getElementById('selected-day-title').textContent = date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+      document.getElementById('event-form').classList.remove('hidden');
+      renderCalendar();
+      renderDayEvents();
+    }
+
+    function renderDayEvents() {
+      const eventList = document.getElementById('event-list');
+      
+      if (!selectedDate) {
+        eventList.innerHTML = '<p class="text-gray-500 text-sm text-center">Click a day to view/add plans</p>';
+        return;
+      }
+      
+      const dayEvents = allData.filter(item => item.type === 'event' && item.date.split('T')[0] === selectedDate);
+      
+      if (dayEvents.length === 0) {
+        eventList.innerHTML = '<p class="text-gray-500 text-sm text-center">No plans for this day</p>';
+        return;
+      }
+      
+      eventList.innerHTML = dayEvents.map((event, index) => `
+        <div class="flex items-center gap-2 bg-white/5 p-2 rounded-lg group fade-in" style="animation-delay: ${index * 0.05}s">
+          <span class="text-emerald-400">📌</span>
+          <span class="flex-1 text-sm text-gray-300">${escapeHtml(event.text)}</span>
+          <button 
+            onclick="deleteEvent('${event.__backendId}')"
+            class="opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-300 p-1 transition-opacity"
+          >
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+          </button>
+        </div>
+      `).join('');
+    }
+
+    async function addEvent(text) {
+      if (!selectedDate || !checkLimit()) return;
+      
+      await window.dataSdk.create({
+        type: 'event',
+        text: text,
+        completed: false,
+        date: selectedDate,
+        duration: 0,
+        category: '',
+        createdAt: new Date().toISOString()
+      });
+    }
+
+    async function deleteEvent(id) {
+      const event = allData.find(e => e.__backendId === id);
+      if (event) {
+        await window.dataSdk.delete(event);
+      }
+    }
+
+    // SYLLABUS TRACKER
+    function renderSyllabus() {
+      const container = document.getElementById('syllabus-container');
+      
+      const subjects = allData.filter(item => item.type === 'subject');
+      
+      if (subjects.length === 0) {
+        container.innerHTML = '<p class="text-gray-500 text-center py-8 col-span-full">No subjects yet. Add one above!</p>';
+        return;
+      }
+
+      const existingCards = new Map([...container.querySelectorAll('[data-subject-id]')].map(el => [el.dataset.subjectId, el]));
+
+      subjects.forEach(subject => {
+        const chapters = allData.filter(item => 
+          item.type === 'chapter' && item.subject === subject.__backendId
+        );
+
+        if (existingCards.has(subject.__backendId)) {
+          const card = existingCards.get(subject.__backendId);
+          updateSubjectCard(card, subject, chapters);
+          existingCards.delete(subject.__backendId);
+        } else {
+          container.appendChild(createSubjectCard(subject, chapters));
+        }
+      });
+
+      existingCards.forEach(card => card.remove());
+    }
+
+    function createSubjectCard(subject, chapters) {
+      const div = document.createElement('div');
+      div.dataset.subjectId = subject.__backendId;
+      div.className = 'bg-white/5 border border-white/10 rounded-xl p-5 fade-in';
+      updateSubjectCard(div, subject, chapters);
+      return div;
+    }
+
+    function updateSubjectCard(card, subject, chapters) {
+      const completedCount = chapters.filter(c => c.completed).length;
+      const chapterCount = parseInt(subject.chapter) || 0;
+      const progressPercent = chapterCount > 0 ? (completedCount / chapterCount) * 100 : 0;
+
+      let chaptersHtml = '';
+      for (let i = 1; i <= chapterCount; i++) {
+        const chapter = chapters.find(c => c.chapter === String(i));
+        const isCompleted = chapter && chapter.completed;
+        chaptersHtml += `
+          <button 
+            onclick="toggleChapter('${subject.__backendId}', '${i}')"
+            class="w-full text-left px-3 py-2 rounded-lg transition-all text-sm flex items-center gap-2
+              ${isCompleted ? 'bg-emerald-500/20 text-emerald-300' : 'bg-white/5 hover:bg-white/10 text-gray-300'}"
+          >
+            <input type="checkbox" ${isCompleted ? 'checked' : ''} class="w-4 h-4 cursor-pointer rounded pointer-events-none">
+            <span>Chapter ${i}</span>
+          </button>
+        `;
+      }
+
+      card.innerHTML = `
+        <div class="flex items-start justify-between gap-3 mb-4">
+          <div class="flex-1">
+            <h3 class="font-semibold text-white">${escapeHtml(subject.text)}</h3>
+            <p class="text-xs text-gray-400 mt-1">${completedCount}/${chapterCount} chapters</p>
+          </div>
+          <button 
+            onclick="deleteSubject('${subject.__backendId}')"
+            class="text-red-400 hover:text-red-300 p-1 transition-colors"
+          >
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+            </svg>
+          </button>
+        </div>
+        <div class="w-full bg-white/10 rounded-full h-3 overflow-hidden mb-4">
+          <div class="bg-gradient-to-r from-emerald-400 to-emerald-500 h-full transition-all duration-300" style="width: ${progressPercent}%"></div>
+        </div>
+        <div class="space-y-1 max-h-48 overflow-y-auto scrollbar-thin">
+          ${chaptersHtml || '<p class="text-gray-500 text-xs text-center py-2">No chapters</p>'}
+        </div>
+      `;
+    }
+
+    async function addSubject(name, chapters) {
+      if (!checkLimit()) return;
+      
+      await window.dataSdk.create({
+        type: 'subject',
+        text: name,
+        completed: false,
+        date: getTodayString(),
+        duration: 0,
+        category: '',
+        subject: '',
+        chapter: chapters,
+        createdAt: new Date().toISOString()
+      });
+    }
+
+    async function deleteSubject(subjectId) {
+      const subject = allData.find(s => s.__backendId === subjectId);
+      if (subject) {
+        await window.dataSdk.delete(subject);
+        // Also delete all chapters for this subject
+        const chapters = allData.filter(c => c.type === 'chapter' && c.subject === subjectId);
+        for (const chapter of chapters) {
+          await window.dataSdk.delete(chapter);
+        }
+      }
+    }
+
+    async function toggleChapter(subjectId, chapterNum) {
+      const existing = allData.find(item => 
+        item.type === 'chapter' && item.subject === subjectId && item.chapter === String(chapterNum)
+      );
+
+      if (existing) {
+        existing.completed = !existing.completed;
+        await window.dataSdk.update(existing);
+      } else {
+        if (!checkLimit()) return;
+        await window.dataSdk.create({
+          type: 'chapter',
+          text: `${chapterNum}`,
+          completed: true,
+          date: getTodayString(),
+          duration: 0,
+          category: '',
+          subject: subjectId,
+          chapter: String(chapterNum),
+          createdAt: new Date().toISOString()
+        });
+      }
+    }
+
+    // HISTORY
+    function renderHistory() {
+      const studyHistory = document.getElementById('study-history');
+      const classHistory = document.getElementById('class-history');
+      
+      const allSessions = allData.filter(item => item.type === 'time');
+      const studySessions = allSessions.filter(s => s.category === 'study');
+      const classSessions = allSessions.filter(s => s.category === 'class');
+
+      // Sort by date descending
+      studySessions.sort((a, b) => new Date(b.date) - new Date(a.date));
+      classSessions.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+      if (studySessions.length === 0) {
+        studyHistory.innerHTML = '<p class="text-gray-500 text-center py-8">No study sessions yet</p>';
+      } else {
+        studyHistory.innerHTML = studySessions.map(session => `
+          <div class="bg-emerald-500/10 border border-emerald-500/30 rounded-lg p-3 flex items-center justify-between group fade-in">
+            <div>
+              <p class="text-sm font-medium text-emerald-300">${formatDuration(session.duration)}</p>
+              <p class="text-xs text-gray-400">${new Date(session.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</p>
+            </div>
+            <button 
+              onclick="deleteSession('${session.__backendId}')"
+              class="opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-300 p-1 transition-opacity"
+            >
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+              </svg>
+            </button>
+          </div>
+        `).join('');
+      }
+
+      if (classSessions.length === 0) {
+        classHistory.innerHTML = '<p class="text-gray-500 text-center py-8">No class sessions yet</p>';
+      } else {
+        classHistory.innerHTML = classSessions.map(session => `
+          <div class="bg-blue-500/10 border border-blue-500/30 rounded-lg p-3 flex items-center justify-between group fade-in">
+            <div>
+              <p class="text-sm font-medium text-blue-300">${formatDuration(session.duration)}</p>
+              <p class="text-xs text-gray-400">${new Date(session.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</p>
+            </div>
+            <button 
+              onclick="deleteSession('${session.__backendId}')"
+              class="opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-300 p-1 transition-opacity"
+            >
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+              </svg>
+            </button>
+          </div>
+        `).join('');
+      }
+    }
+
+    async function deleteSession(id) {
+      const session = allData.find(s => s.__backendId === id);
+      if (session) {
+        await window.dataSdk.delete(session);
+      }
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    // Event Listeners
+    document.getElementById('task-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const input = document.getElementById('task-input');
+      const text = input.value.trim();
+      if (text) {
+        input.disabled = true;
+        await addTask(text);
+        input.value = '';
+        input.disabled = false;
+        input.focus();
+      }
+    });
+
+    document.getElementById('event-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const input = document.getElementById('event-input');
+      const text = input.value.trim();
+      if (text) {
+        input.disabled = true;
+        await addEvent(text);
+        input.value = '';
+        input.disabled = false;
+        input.focus();
+      }
+    });
+
+    document.getElementById('subject-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const nameInput = document.getElementById('subject-input');
+      const chaptersInput = document.getElementById('chapters-input');
+      const name = nameInput.value.trim();
+      const chapters = chaptersInput.value.trim();
+      
+      if (name && chapters && parseInt(chapters) > 0) {
+        nameInput.disabled = true;
+        chaptersInput.disabled = true;
+        await addSubject(name, chapters);
+        nameInput.value = '';
+        chaptersInput.value = '';
+        nameInput.disabled = false;
+        chaptersInput.disabled = false;
+        nameInput.focus();
+      }
+    });
+
+    document.getElementById('start-btn').addEventListener('click', startTimer);
+    document.getElementById('pause-btn').addEventListener('click', pauseTimer);
+    document.getElementById('save-btn').addEventListener('click', saveTimer);
+    document.getElementById('reset-btn').addEventListener('click', resetTimer);
+
+    document.querySelectorAll('.category-btn').forEach(btn => {
+      btn.addEventListener('click', () => setCategory(btn.dataset.category));
+    });
+
+    document.getElementById('prev-month').addEventListener('click', () => {
+      currentMonth.setMonth(currentMonth.getMonth() - 1);
+      renderCalendar();
+    });
+
+    document.getElementById('next-month').addEventListener('click', () => {
+      currentMonth.setMonth(currentMonth.getMonth() + 1);
+      renderCalendar();
+    });
+
+    // PAGE NAVIGATION
+    function navigateTo(page) {
+      const mainContainer = document.querySelector('div.max-w-7xl.mx-auto.grid');
+      const headerSection = document.querySelector('header');
+      const navButtonsSection = document.querySelector('.max-w-7xl.mx-auto.mt-8');
+      const syllabusPage = document.getElementById('syllabus-page');
+      const historyPage = document.getElementById('history-page');
+      
+      if (page === 'home') {
+        headerSection.style.display = 'block';
+        mainContainer.style.display = 'grid';
+        navButtonsSection.style.display = 'block';
+        syllabusPage.style.display = 'none';
+        historyPage.style.display = 'none';
+        window.scrollTo(0, 0);
+      } else if (page === 'syllabus') {
+        headerSection.style.display = 'none';
+        mainContainer.style.display = 'none';
+        navButtonsSection.style.display = 'none';
+        syllabusPage.style.display = 'block';
+        historyPage.style.display = 'none';
+        renderSyllabus();
+        window.scrollTo(0, 0);
+      } else if (page === 'history') {
+        headerSection.style.display = 'none';
+        mainContainer.style.display = 'none';
+        navButtonsSection.style.display = 'none';
+        syllabusPage.style.display = 'none';
+        historyPage.style.display = 'block';
+        renderHistory();
+        window.scrollTo(0, 0);
+      }
+    }
+
+    // Initialize
+    initApp();
+  </script>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9da4e0de6500a48b',t:'MTc3MzE3MjU0MS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
